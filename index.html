@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Phòng Cháy Chữa Cháy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .status-badge.connected {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-badge.disconnected {
+            background: #ef4444;
+            color: white;
+        }
+
+        .mode-switch {
+            margin-top: 15px;
+        }
+
+        .switch-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            background: #f3f4f6;
+            padding: 10px 20px;
+            border-radius: 25px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 30px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sensor-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .sensor-value.normal {
+            color: #10b981;
+        }
+
+        .sensor-value.warning {
+            color: #f59e0b;
+        }
+
+        .sensor-value.danger {
+            color: #ef4444;
+        }
+
+        .control-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .control-btn.off {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+
+        .control-btn.on {
+            background: #10b981;
+            color: white;
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .control-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .alarm-indicator {
+            width: 100%;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .alarm-indicator.active {
+            background: #ef4444;
+            color: white;
+            animation: pulse 1s infinite;
+        }
+
+        .alarm-indicator.inactive {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .icon {
+            font-size: 24px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e5e7eb;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #3b82f6);
+            transition: width 0.3s;
+        }
+
+        .servo-status {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .servo-status.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .servo-status.inactive {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 HỆ THỐNG PHÒNG CHÁY CHỮ CHÁY</h1>
+            <span id="connectionStatus" class="status-badge disconnected">Đang kết nối...</span>
+            
+            <div class="mode-switch">
+                <div class="switch-container">
+                    <span>Chế độ Tự động</span>
+                    <label class="switch">
+                        <input type="checkbox" id="modeSwitch">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Chế độ Thủ công</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- Fire Sensor -->
+            <div class="card">
+                <h3><span class="icon">🔥</span> Cảm Biến Lửa</h3>
+                <div id="fireValue" class="sensor-value normal">0</div>
+                <div class="progress-bar">
+                    <div id="fireProgress" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <small>Ngưỡng: 1800 ADC</small>
+            </div>
+
+            <!-- Smoke Sensor -->
+            <div class="card">
+                <h3><span class="icon">💨</span> Cảm Biến Khói</h3>
+                <div id="smokeValue" class="sensor-value normal">0</div>
+                <div class="progress-bar">
+                    <div id="smokeProgress" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <small>Ngưỡng: 1200 ADC</small>
+            </div>
+
+            <!-- IMU Sensor -->
+            <div class="card">
+                <h3><span class="icon">📊</span> Cảm Biến Rung</h3>
+                <div id="imuValue" class="sensor-value normal">0.00</div>
+                <small>Delta G (Ngưỡng: 0.50)</small>
+            </div>
+
+            <!-- Fan Control -->
+            <div class="card">
+                <h3><span class="icon">🌀</span> Quạt Hút Khói</h3>
+                <div id="fanStatus" class="sensor-value normal">TẮT</div>
+                <button id="fanBtn" class="control-btn off" disabled>
+                    BẬT QUẠT
+                </button>
+            </div>
+
+            <!-- Pump Control -->
+            <div class="card">
+                <h3><span class="icon">💧</span> Bơm Chữa Cháy</h3>
+                <div id="pumpStatus" class="sensor-value normal">TẮT</div>
+                <button id="pumpBtn" class="control-btn off" disabled>
+                    BẬT BƠM
+                </button>
+            </div>
+
+            <!-- Servo Status -->
+            <div class="card">
+                <h3><span class="icon">🔧</span> Servo Cửa Thoát</h3>
+                <span id="servoStatus" class="servo-status inactive">ĐÓNG</span>
+                <div style="margin-top: 15px; color: #6b7280;">
+                    Tự động mở khi phát hiện rung động
+                </div>
+            </div>
+        </div>
+
+        <!-- Alarm -->
+        <div class="card">
+            <h3><span class="icon">🚨</span> Cảnh Báo</h3>
+            <div id="alarmIndicator" class="alarm-indicator inactive">
+                KHÔNG CÓ CẢNH BÁO
+            </div>
+            <button id="alarmBtn" class="control-btn off" disabled style="margin-top: 15px;">
+                BẬT CẢNH BÁO
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== CẤU HÌNH E-RA ====================
+        const ERA_CONFIG = {
+            AUTH_TOKEN: 'bb009f45-56ff-448a-8a79-5daa7721b616',
+            MQTT_HOST: 'mqtt1.eoh.io',
+            MQTT_PORT: 1883, // hoặc 8883 cho SSL
+            CLIENT_ID: 'era_web_' + Math.random().toString(16).substr(2, 8)
+        };
+
+        // ==================== BIẾN TRẠNG THÁI ====================
+        let isConnected = false;
+        let isManualMode = false;
+        let currentData = {
+            fireAdc: 0,
+            smokeAdc: 0,
+            imuDelta: 0,
+            fanState: 0,
+            pumpState: 0,
+            alarmState: 0,
+            servoState: 0
+        };
+
+        // ==================== KẾT NỐI E-RA (MQTT) ====================
+        // Lưu ý: Để sử dụng MQTT trong browser, bạn cần thư viện MQTT.js
+        // Thêm vào head: <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+        
+        // Hoặc sử dụng HTTP API của E-Ra
+        const ERA_API_BASE = 'https://backend1.eoh.io';
+        
+        async function connectEra() {
+            try {
+                // Simulation: Trong thực tế, bạn cần kết nối MQTT hoặc WebSocket
+                updateConnectionStatus(true);
+                startDataPolling();
+            } catch (error) {
+                console.error('Lỗi kết nối:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            isConnected = connected;
+            const statusEl = document.getElementById('connectionStatus');
+            if (connected) {
+                statusEl.textContent = 'Đã kết nối';
+                statusEl.className = 'status-badge connected';
+            } else {
+                statusEl.textContent = 'Mất kết nối';
+                statusEl.className = 'status-badge disconnected';
+            }
+        }
+
+        // ==================== ĐỌC DÜ LIỆU TỪ E-RA ====================
+        async function readVirtualPin(pin) {
+            try {
+                const response = await fetch(
+                    `${ERA_API_BASE}/virtual/read?token=${ERA_CONFIG.AUTH_TOKEN}&pin=V${pin}`
+                );
+                const data = await response.json();
+                return data.value || 0;
+            } catch (error) {
+                console.error(`Lỗi đọc V${pin}:`, error);
+                return 0;
+            }
+        }
+
+        async function writeVirtualPin(pin, value) {
+            try {
+                await fetch(
+                    `${ERA_API_BASE}/virtual/write?token=${ERA_CONFIG.AUTH_TOKEN}&pin=V${pin}&value=${value}`,
+                    { method: 'POST' }
+                );
+            } catch (error) {
+                console.error(`Lỗi ghi V${pin}:`, error);
+            }
+        }
+
+        // ==================== CẬP NHẬT DỮ LIỆU ====================
+        async function updateData() {
+            if (!isConnected) return;
+
+            try {
+                // Đọc tất cả các pin
+                currentData.fireAdc = await readVirtualPin(1);
+                currentData.smokeAdc = await readVirtualPin(2);
+                currentData.imuDelta = await readVirtualPin(4);
+                currentData.alarmState = await readVirtualPin(6);
+                currentData.fanState = await readVirtualPin(7);
+                currentData.pumpState = await readVirtualPin(8);
+                currentData.servoState = await readVirtualPin(9);
+
+                updateUI();
+            } catch (error) {
+                console.error('Lỗi cập nhật dữ liệu:', error);
+            }
+        }
+
+        function startDataPolling() {
+            // Cập nhật mỗi 500ms
+            setInterval(updateData, 500);
+        }
+
+        // ==================== CẬP NHẬT GIAO DIỆN ====================
+        function updateUI() {
+            // Fire Sensor
+            const fireValue = currentData.fireAdc;
+            document.getElementById('fireValue').textContent = fireValue;
+            const firePercent = Math.min((fireValue / 4095) * 100, 100);
+            document.getElementById('fireProgress').style.width = firePercent + '%';
+            
+            const fireEl = document.getElementById('fireValue');
+            if (fireValue > 1800) {
+                fireEl.className = 'sensor-value danger';
+            } else if (fireValue > 1500) {
+                fireEl.className = 'sensor-value warning';
+            } else {
+                fireEl.className = 'sensor-value normal';
+            }
+
+            // Smoke Sensor
+            const smokeValue = currentData.smokeAdc;
+            document.getElementById('smokeValue').textContent = smokeValue;
+            const smokePercent = Math.min((smokeValue / 4095) * 100, 100);
+            document.getElementById('smokeProgress').style.width = smokePercent + '%';
+            
+            const smokeEl = document.getElementById('smokeValue');
+            if (smokeValue < 1200) {
+                smokeEl.className = 'sensor-value danger';
+            } else if (smokeValue < 1500) {
+                smokeEl.className = 'sensor-value warning';
+            } else {
+                smokeEl.className = 'sensor-value normal';
+            }
+
+            // IMU
+            document.getElementById('imuValue').textContent = currentData.imuDelta.toFixed(2);
+
+            // Fan
+            updateDeviceStatus('fan', currentData.fanState);
+
+            // Pump
+            updateDeviceStatus('pump', currentData.pumpState);
+
+            // Alarm
+            const alarmIndicator = document.getElementById('alarmIndicator');
+            if (currentData.alarmState) {
+                alarmIndicator.textContent = '⚠️ CẢNH BÁO CHÁY!';
+                alarmIndicator.className = 'alarm-indicator active';
+            } else {
+                alarmIndicator.textContent = 'KHÔNG CÓ CẢNH BÁO';
+                alarmIndicator.className = 'alarm-indicator inactive';
+            }
+
+            // Servo
+            const servoStatus = document.getElementById('servoStatus');
+            if (currentData.servoState) {
+                servoStatus.textContent = 'MỞ';
+                servoStatus.className = 'servo-status active';
+            } else {
+                servoStatus.textContent = 'ĐÓNG';
+                servoStatus.className = 'servo-status inactive';
+            }
+
+            updateAlarmButton(currentData.alarmState);
+        }
+
+        function updateDeviceStatus(device, state) {
+            const statusEl = document.getElementById(device + 'Status');
+            const btnEl = document.getElementById(device + 'Btn');
+            
+            if (state) {
+                statusEl.textContent = 'BẬT';
+                statusEl.className = 'sensor-value normal';
+                btnEl.textContent = 'TẮT ' + (device === 'fan' ? 'QUẠT' : 'BƠM');
+                btnEl.className = 'control-btn on';
+            } else {
+                statusEl.textContent = 'TẮT';
+                statusEl.className = 'sensor-value';
+                btnEl.textContent = 'BẬT ' + (device === 'fan' ? 'QUẠT' : 'BƠM');
+                btnEl.className = 'control-btn off';
+            }
+        }
+
+        function updateAlarmButton(state) {
+            const btnEl = document.getElementById('alarmBtn');
+            
+            if (state) {
+                btnEl.textContent = 'TẮT CẢNH BÁO';
+                btnEl.className = 'control-btn on';
+            } else {
+                btnEl.textContent = 'BẬT CẢNH BÁO';
+                btnEl.className = 'control-btn off';
+            }
+        }
+
+        // ==================== XỬ LÝ SỰ KIỆN ====================
+        document.getElementById('modeSwitch').addEventListener('change', async (e) => {
+            isManualMode = e.target.checked;
+            await writeVirtualPin(0, isManualMode ? 1 : 0);
+            
+            // Enable/disable manual controls
+            const controls = ['fanBtn', 'pumpBtn', 'alarmBtn'];
+            controls.forEach(id => {
+                document.getElementById(id).disabled = !isManualMode;
+            });
+        });
+
+        document.getElementById('fanBtn').addEventListener('click', async () => {
+            if (!isManualMode) return;
+            const newState = currentData.fanState ? 0 : 1;
+            await writeVirtualPin(7, newState);
+            currentData.fanState = newState;
+            updateUI();
+        });
+
+        document.getElementById('pumpBtn').addEventListener('click', async () => {
+            if (!isManualMode) return;
+            const newState = currentData.pumpState ? 0 : 1;
+            await writeVirtualPin(8, newState);
+            currentData.pumpState = newState;
+            updateUI();
+        });
+
+        document.getElementById('alarmBtn').addEventListener('click', async () => {
+            if (!isManualMode) return;
+            const newState = currentData.alarmState ? 0 : 1;
+            await writeVirtualPin(6, newState);
+            currentData.alarmState = newState;
+            updateUI();
+        });
+
+        // ==================== KHỞI ĐỘNG ====================
+        window.addEventListener('load', () => {
+            connectEra();
+        });
+    </script>
+</body>
+</html>
